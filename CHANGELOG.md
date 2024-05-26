@@ -410,6 +410,18 @@ z.object({})
 
   Contributed by @Conaclos
 
+## 1.8.0 (2024-05-26)
+
+### Features
+
+#### New `clean` command
+
+Use this new command to clean after the `biome-logs` directory, and remove all the log files.
+
+```shell
+biome clean
+```
+
 ## 1.7.3 (2024-05-06)
 
 ### CLI
