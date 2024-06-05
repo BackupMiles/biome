@@ -29,7 +29,7 @@ use biome_json_parser::{parse_json_with_cache, JsonParserOptions};
 use biome_json_syntax::JsonFileSource;
 use biome_parser::AnyParse;
 use biome_project::NodeJsProject;
-use biome_rowan::NodeCache;
+use biome_rowan::{NodeCache, TextRange, TextSize};
 use dashmap::{mapref::entry::Entry, DashMap};
 use indexmap::IndexSet;
 use std::ffi::OsStr;
@@ -106,7 +106,7 @@ impl WorkspaceServer {
     /// Get the supported capabilities for a given file path
     fn get_file_capabilities(&self, path: &BiomePath) -> Capabilities {
         let language = self.get_file_source(path);
-
+        
         debug!("File capabilities: {:?} {:?}", &language, &path);
         self.features.get_capabilities(path, language)
     }
@@ -783,10 +783,30 @@ impl Workspace for WorkspaceServer {
     }
 
     fn search_pattern(&self, params: SearchPatternParams) -> Result<SearchResults, WorkspaceError> {
+        let SearchPatternParams { 
+            path,
+            pattern: _pattern
+         } = params;
+
+         println!(">>> {:?}", &path);
+
         // FIXME: Let's implement some real matching here...
+        // should we consider creating a new ds for search results?
+
+        // TODO: this will read all the file as an &str, a whole line,
+        // which will be subsequently read inside its printer, where much like github printer,
+        // we will try to create a source_file from it, and get the start and end indexes for each match
+
+        // ho do we getw
+        let matches = vec![
+            (String::from("hello world"), TextRange::new(TextSize::from(0), TextSize::from(4)) ),
+            (String::from("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"), TextRange::new(TextSize::from(8), TextSize::from(10)) ),
+        ];
+
         Ok(SearchResults {
-            file: params.path,
-            matches: Vec::new(),
+            file: path,
+            // TODO: add matches here
+            matches: matches
         })
     }
 

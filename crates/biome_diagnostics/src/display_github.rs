@@ -70,6 +70,58 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintGitHubDiagnostic<'_, D> {
     }
 }
 
+pub struct PrintMatchDiagnostic<'fmt, D: ?Sized> {
+    diag: &'fmt D,
+}
+
+impl<'fmt, D: AsDiagnostic + ?Sized> PrintMatchDiagnostic<'fmt, D> {
+    pub fn simple(diag: &'fmt D) -> Self {
+        Self { diag }
+    }
+}
+
+impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintMatchDiagnostic<'_, D> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> io::Result<()> {
+        let diagnostic = self.diag.as_diagnostic();
+        let location = diagnostic.location();
+
+        let Some(span) = location.span else {
+            return Ok(());
+        };
+        let Some(source_code) = location.source_code else {
+            return Ok(());
+        };
+        
+        // TODO: any better way to get the line out?
+        // ok, basically match shouldn't come from message, but from spans
+        let title = {
+            let mut message = MarkupBuf::default();
+            let mut fmt = fmt::Formatter::new(&mut message);
+            fmt.write_markup(markup!({ PrintDiagnosticMessage(diagnostic) }))?;
+            markup_to_string(&message)
+        }.unwrap();
+        let source = SourceFile::new(source_code);
+        let start = source.location(span.start())?;
+        let end = source.location(span.end())?;
+
+        for (idx, c) in title.chars().enumerate() {
+            // let e = if idx >= start_idx && idx <= end_idx {
+            //     fmt.write_markup(markup! {
+            //         <Emphasis><Error>{c}</Error></Emphasis>
+            //     })
+            // } else {
+            //     fmt.write_str(&c.to_string())
+            // };
+
+            // match e {
+            //     _ => ()
+            // }
+        }
+
+        Ok(())
+    }
+}
+
 struct PrintDiagnosticMessage<'fmt, D: ?Sized>(&'fmt D);
 
 impl<D: Diagnostic + ?Sized> fmt::Display for PrintDiagnosticMessage<'_, D> {

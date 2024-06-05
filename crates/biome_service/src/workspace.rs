@@ -146,6 +146,7 @@ impl FileFeaturesResult {
             self.features_supported
                 .insert(FeatureName::OrganizeImports, SupportKind::Supported);
         }
+        self.features_supported.insert(FeatureName::Search, SupportKind::Supported);
 
         self
     }
@@ -699,7 +700,7 @@ pub struct SearchPatternParams {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct SearchResults {
     pub file: BiomePath,
-    pub matches: Vec<TextRange>,
+    pub matches: Vec<(String, TextRange)>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

@@ -10,6 +10,7 @@ use crate::execute::traverse::TraversalOptions;
 use crate::execute::TraversalMode;
 use biome_diagnostics::{category, DiagnosticExt, DiagnosticTags, Error};
 use biome_fs::BiomePath;
+use biome_rowan::TextRange;
 use biome_service::workspace::{FeatureName, SupportKind, SupportsFeatureParams};
 use check::check_file;
 use format::format;
@@ -53,6 +54,12 @@ pub(crate) enum Message {
         content: String,
         diagnostics: Vec<Error>,
         skipped_diagnostics: u32,
+    },
+    SearchDiagnostic {
+        file_name: String,
+        content: String,
+        // TODO: use a struct to represent matches maybe
+        matches: Vec<(String, TextRange)>
     },
     Diff {
         file_name: String,

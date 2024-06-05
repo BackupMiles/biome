@@ -2,15 +2,15 @@ use super::process_file::{process_file, DiffKind, FileStatus, Message};
 use super::{Execution, TraversalMode};
 use crate::cli_options::CliOptions;
 use crate::execute::diagnostics::{
-    CIFormatDiffDiagnostic, CIOrganizeImportsDiffDiagnostic, ContentDiffAdvice,
-    FormatDiffDiagnostic, OrganizeImportsDiffDiagnostic, PanicDiagnostic,
+    CIFormatDiffDiagnostic, CIOrganizeImportsDiffDiagnostic, ContentDiffAdvice, FormatDiffDiagnostic, MatchDiagnostic, OrganizeImportsDiffDiagnostic, PanicDiagnostic
 };
 use crate::reporter::TraversalSummary;
 use crate::{CliDiagnostic, CliSession};
-use biome_diagnostics::DiagnosticTags;
+use biome_diagnostics::{DiagnosticTags, LineIndexBuf, SourceCode};
 use biome_diagnostics::{category, DiagnosticExt, Error, Resource, Severity};
 use biome_fs::{BiomePath, FileSystem, PathInterner};
 use biome_fs::{TraversalContext, TraversalScope};
+use biome_rowan::TextSize;
 use biome_service::workspace::{DropPatternParams, IsPathIgnoredParams};
 use biome_service::{extension_error, workspace::SupportsFeatureParams, Workspace, WorkspaceError};
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -450,6 +450,19 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                         }
                     }
                 }
+                Message::SearchDiagnostic { file_name, content, matches } => {
+                    for mat in matches {
+                        // TODO: should we consider making `mat` a (usize, TextRange)
+                        let (_content, range) = mat;
+                        // TODO: we are getting somewhere, the gist here is that a search result should indicate a line
+                        // and a column.
+                        let diag = MatchDiagnostic {
+                            file_name: file_name.clone(),
+                            span: range
+                        }.with_file_source_code(content.clone());
+                        diagnostics_to_print.push(diag.with_severity(Severity::Information))
+                    }
+                }
             }
         }
         diagnostics_to_print
@@ -578,7 +591,8 @@ impl<'ctx, 'app> TraversalContext for TraversalOptions<'ctx, 'app> {
             TraversalMode::Lint { .. } => file_features.supports_lint(),
             // Imagine if Biome can't handle its own configuration file...
             TraversalMode::Migrate { .. } => true,
-            TraversalMode::Search { .. } => false,
+            // FIXME: switch back
+            TraversalMode::Search { .. } => true,
         }
     }
 

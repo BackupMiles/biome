@@ -2,6 +2,7 @@ use biome_diagnostics::adapters::{IoError, StdError};
 use biome_diagnostics::{
     Advices, Category, Diagnostic, DiagnosticExt, DiagnosticTags, Error, Visit,
 };
+use biome_rowan::TextRange;
 use biome_text_edit::TextEdit;
 use std::io;
 
@@ -102,6 +103,15 @@ pub(crate) struct UnhandledDiagnostic;
 #[derive(Debug, Diagnostic)]
 #[diagnostic(category = "parse", message = "Skipped file with syntax errors")]
 pub(crate) struct SkippedDiagnostic;
+
+#[derive(Debug, Diagnostic)]
+#[diagnostic(category = "search", message = "Found the following matches")]
+pub(crate) struct MatchDiagnostic {
+    #[location(resource)]
+    pub(crate) file_name: String,
+    #[location(span)]
+    pub(crate) span: TextRange,
+}
 
 /// Extension trait for turning [Display]-able error types into [TraversalError]
 pub(crate) trait ResultExt {

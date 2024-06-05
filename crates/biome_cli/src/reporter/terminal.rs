@@ -3,6 +3,7 @@ use crate::reporter::{DiagnosticsPayload, ReporterVisitor, TraversalSummary};
 use crate::Reporter;
 use biome_console::fmt::Formatter;
 use biome_console::{fmt, markup, Console, ConsoleExt};
+use biome_diagnostics::display_github::PrintMatchDiagnostic;
 use biome_diagnostics::PrintDiagnostic;
 use std::io;
 use std::time::Duration;
@@ -51,7 +52,7 @@ impl<'a> ReporterVisitor for ConsoleReporterVisitor<'a> {
 
     fn report_diagnostics(
         &mut self,
-        _execution: &Execution,
+        execution: &Execution,
         diagnostics_payload: DiagnosticsPayload,
     ) -> io::Result<()> {
         for diagnostic in &diagnostics_payload.diagnostics {
@@ -63,6 +64,10 @@ impl<'a> ReporterVisitor for ConsoleReporterVisitor<'a> {
                     self.0
                         .error(markup! {{PrintDiagnostic::simple(diagnostic)}});
                 }
+            }
+            if execution.is_search() {
+                self.0
+                    .log(markup! {{PrintMatchDiagnostic::simple(diagnostic)}});
             }
         }
 
