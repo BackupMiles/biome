@@ -16,6 +16,7 @@ impl Reporter for GithubReporter {
 }
 pub(crate) struct GithubReporterVisitor<'a>(pub(crate) &'a mut dyn Console);
 
+// TODO: do the same for search
 impl<'a> ReporterVisitor for GithubReporterVisitor<'a> {
     fn report_summary(
         &mut self,
