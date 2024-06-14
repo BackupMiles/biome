@@ -215,7 +215,6 @@ pub(super) fn print_invisibles(
     let mut prev_char_was_whitespace = false;
 
     while let Some((i, char)) = iter.next() {
-        let should_highlight
         let mut show_invisible = true;
 
         // Only highlight spaces when surrounded by other spaces
