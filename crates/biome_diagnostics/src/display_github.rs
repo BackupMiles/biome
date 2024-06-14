@@ -1,6 +1,8 @@
-use crate::display::frame::SourceFile;
+use crate::display::frame::{IntoIter, SourceFile};
+use crate::display::PrintHeader;
 use crate::{diagnostic::internal::AsDiagnostic, Diagnostic, Resource, Severity};
 use biome_console::{fmt, markup, MarkupBuf};
+use biome_rowan::{TextRange};
 use std::io;
 
 /// Helper struct for printing a diagnostic as markup into any formatter
@@ -91,34 +93,206 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintMatchDiagnostic<'_, D> {
         let Some(source_code) = location.source_code else {
             return Ok(());
         };
-        
-        // TODO: any better way to get the line out?
-        // ok, basically match shouldn't come from message, but from spans
-        let title = {
-            let mut message = MarkupBuf::default();
-            let mut fmt = fmt::Formatter::new(&mut message);
-            fmt.write_markup(markup!({ PrintDiagnosticMessage(diagnostic) }))?;
-            markup_to_string(&message)
-        }.unwrap();
+
+        fmt.write_markup(markup! {
+            {PrintHeader(diagnostic)}"\n\n"
+        })?;
+
+
         let source = SourceFile::new(source_code);
+        
         let start = source.location(span.start())?;
         let end = source.location(span.end())?;
 
-        for (idx, c) in title.chars().enumerate() {
-            // let e = if idx >= start_idx && idx <= end_idx {
-            //     fmt.write_markup(markup! {
-            //         <Emphasis><Error>{c}</Error></Emphasis>
-            //     })
+        let match_line_start = start.line_number;
+        let match_line_end = end.line_number.saturating_add(1);
+
+        for line_index in IntoIter::new(match_line_start..match_line_end) {
+            let current_start = source.line_start(line_index.to_zero_indexed())?;
+            let current_end = source.line_start(line_index.to_zero_indexed() + 1)?;
+
+            // TODO: this is not removing <trailing blank lines>
+
+            let current_range = TextRange::new(current_start, current_end);
+            let current_text = source_code.text[current_range].trim_end_matches(['\r', '\n']);
+
+            // write!(fmt, "{}:{}:    ", line_index, start.column_number)?;
+
+            let mut current_iter = current_text.char_indices().into_iter();
+
+            let is_first_line = line_index == start.line_number;
+            let is_last_line = line_index == end.line_number;
+
+            let start_index_relative_to_line = span.start().max(current_range.start()) - current_range.start();
+            let end_index_relative_to_line = span.end().min(current_range.end()) - current_range.start();
+
+            let marker = TextRange::new(start_index_relative_to_line, end_index_relative_to_line);
+
+            // let marker = if is_first_line && is_last_line {
+            //     Some(TextRange::new(
+            //         start_index_relative_to_line,
+            //         end_index_relative_to_line,
+            //     ))
+            // } else if is_first_line {
+            //     Some(TextRange::new(
+            //         start_index_relative_to_line,
+            //         current_text.text_len()
+            //     ))
+            // } else if is_last_line {
+            //     let start_index = current_text
+            //         .text_len()
+            //         .checked_sub(current_text.trim_start().text_len())
+            //         .expect("integer overflow");
+            //     Some(TextRange::new(
+            //         start_index,
+            //         end_index_relative_to_line
+            //     ))
             // } else {
-            //     fmt.write_str(&c.to_string())
+            //     None
             // };
 
-            // match e {
-            //     _ => ()
-            // }
+            print_invisibles(
+                fmt,
+                current_text,
+                &marker,
+                PrintInvisiblesOptions {
+                    ignore_trailing_carriage_return: true,
+                    ignore_leading_tabs: true,
+                    ignore_lone_spaces: true,
+                    at_line_start: true,
+                    at_line_end: true,
+                },
+            )?;
+
+            write!(fmt, "\n")?;
         }
 
+        write!(fmt, "\n\n")?;
+
         Ok(())
+    }
+}
+
+pub(super) struct PrintInvisiblesOptions {
+    /// Do not print tab characters at the start of the string
+    pub(super) ignore_leading_tabs: bool,
+    /// If this is set to true, space characters will only be substituted when
+    /// at least two of them are found in a row
+    pub(super) ignore_lone_spaces: bool,
+    /// Do not print `'\r'` characters if they're followed by `'\n'`
+    pub(super) ignore_trailing_carriage_return: bool,
+    // Set to `true` to show invisible characters at the start of the string
+    pub(super) at_line_start: bool,
+    // Set to `true` to show invisible characters at the end of the string
+    pub(super) at_line_end: bool,
+}
+
+/// Print `input` to `fmt` with invisible characters replaced with an
+/// appropriate visual representation. Return `true` if any non-whitespace
+/// character was printed
+pub(super) fn print_invisibles(
+    fmt: &mut fmt::Formatter<'_>,
+    input: &str,
+    range: &TextRange,
+    options: PrintInvisiblesOptions,
+) -> io::Result<bool> {
+    let mut had_non_whitespace = false;
+
+    // Get the first trailing whitespace character in the string
+    let trailing_whitespace_index = input
+        .char_indices()
+        .rev()
+        .find_map(|(index, char)| {
+            if !char.is_ascii_whitespace() {
+                Some(index)
+            } else {
+                None
+            }
+        })
+        .unwrap_or(input.len());
+
+    let mut iter = input.char_indices().peekable();
+    let mut prev_char_was_whitespace = false;
+
+    while let Some((i, char)) = iter.next() {
+        let should_highlight
+        let mut show_invisible = true;
+
+        // Only highlight spaces when surrounded by other spaces
+        if char == ' ' && options.ignore_lone_spaces {
+            show_invisible = false;
+
+            let next_char_is_whitespace = iter
+                .peek()
+                .map_or(false, |(_, char)| char.is_ascii_whitespace());
+
+            if prev_char_was_whitespace || next_char_is_whitespace {
+                show_invisible = false;
+            }
+        }
+
+        prev_char_was_whitespace = char.is_ascii_whitespace();
+
+        // Don't show leading tabs
+        if options.at_line_start
+            && !had_non_whitespace
+            && char == '\t'
+            && options.ignore_leading_tabs
+        {
+            show_invisible = false;
+        }
+
+        // Always show if at the end of line
+        if options.at_line_end && i >= trailing_whitespace_index {
+            show_invisible = true;
+        }
+
+        // If we are a carriage return next to a \n then don't show the character as visible
+        if options.ignore_trailing_carriage_return && char == '\r' {
+            let next_char_is_line_feed = iter.peek().map_or(false, |(_, char)| *char == '\n');
+            if next_char_is_line_feed {
+                continue;
+            }
+        }
+
+        if !show_invisible {
+            if !char.is_ascii_whitespace() {
+                had_non_whitespace = true;
+            }
+
+            write!(fmt, "{char}")?;
+            continue;
+        }
+
+        if let Some(visible) = show_invisible_char(char) {
+            fmt.write_markup(markup! { <Dim>{visible}</Dim> })?;
+            continue;
+        }
+
+        if (char.is_whitespace() && !char.is_ascii_whitespace()) || char.is_control() {
+            let code = u32::from(char);
+            fmt.write_markup(markup! { <Inverse>"U+"{format_args!("{code:x}")}</Inverse> })?;
+            continue;
+        }
+
+
+        write!(fmt, "{char}")?;
+    }
+
+    Ok(had_non_whitespace)
+}
+
+fn show_invisible_char(char: char) -> Option<&'static str> {
+    match char {
+        ' ' => Some("\u{b7}"),      // Middle Dot
+        '\r' => Some("\u{240d}"),   // Carriage Return Symbol
+        '\n' => Some("\u{23ce}"),   // Return Symbol
+        '\t' => Some("\u{2192} "),  // Rightwards Arrow
+        '\0' => Some("\u{2400}"),   // Null Symbol
+        '\x0b' => Some("\u{240b}"), // Vertical Tabulation Symbol
+        '\x08' => Some("\u{232b}"), // Backspace Symbol
+        '\x0c' => Some("\u{21a1}"), // Downards Two Headed Arrow
+        _ => None,
     }
 }
 
