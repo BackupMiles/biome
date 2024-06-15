@@ -2,7 +2,7 @@ use crate::display::frame::{IntoIter, SourceFile};
 use crate::display::PrintHeader;
 use crate::{diagnostic::internal::AsDiagnostic, Diagnostic, Resource, Severity};
 use biome_console::{fmt, markup, MarkupBuf};
-use biome_rowan::{TextRange};
+use biome_rowan::{TextLen, TextRange, TextSize};
 use std::io;
 
 /// Helper struct for printing a diagnostic as markup into any formatter
@@ -116,40 +116,35 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintMatchDiagnostic<'_, D> {
             let current_range = TextRange::new(current_start, current_end);
             let current_text = source_code.text[current_range].trim_end_matches(['\r', '\n']);
 
-            // write!(fmt, "{}:{}:    ", line_index, start.column_number)?;
-
-            let mut current_iter = current_text.char_indices().into_iter();
-
             let is_first_line = line_index == start.line_number;
             let is_last_line = line_index == end.line_number;
 
             let start_index_relative_to_line = span.start().max(current_range.start()) - current_range.start();
             let end_index_relative_to_line = span.end().min(current_range.end()) - current_range.start();
 
-            let marker = TextRange::new(start_index_relative_to_line, end_index_relative_to_line);
-
-            // let marker = if is_first_line && is_last_line {
-            //     Some(TextRange::new(
-            //         start_index_relative_to_line,
-            //         end_index_relative_to_line,
-            //     ))
-            // } else if is_first_line {
-            //     Some(TextRange::new(
-            //         start_index_relative_to_line,
-            //         current_text.text_len()
-            //     ))
-            // } else if is_last_line {
-            //     let start_index = current_text
-            //         .text_len()
-            //         .checked_sub(current_text.trim_start().text_len())
-            //         .expect("integer overflow");
-            //     Some(TextRange::new(
-            //         start_index,
-            //         end_index_relative_to_line
-            //     ))
-            // } else {
-            //     None
-            // };
+            let marker = if is_first_line && is_last_line {
+                TextRange::new(
+                    start_index_relative_to_line,
+                    end_index_relative_to_line,
+                )
+            } else if is_first_line {
+                TextRange::new(
+                    start_index_relative_to_line,
+                    current_text.text_len()
+                )
+            } else if is_last_line {
+                let start_index = current_text
+                    .text_len()
+                    .checked_sub(current_text.trim_start().text_len())
+                    .expect("integer overflow");
+                TextRange::new(
+                    start_index,
+                    end_index_relative_to_line
+                )
+            } else {
+                // whole line
+                TextRange::new(TextSize::from(0), current_text.text_len())
+            };
 
             print_invisibles(
                 fmt,
@@ -166,8 +161,6 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintMatchDiagnostic<'_, D> {
 
             write!(fmt, "\n")?;
         }
-
-        write!(fmt, "\n\n")?;
 
         Ok(())
     }
@@ -216,6 +209,7 @@ pub(super) fn print_invisibles(
 
     while let Some((i, char)) = iter.next() {
         let mut show_invisible = true;
+        let should_highlight = i >= range.start().into() && i < range.end().into();
 
         // Only highlight spaces when surrounded by other spaces
         if char == ' ' && options.ignore_lone_spaces {
@@ -275,7 +269,11 @@ pub(super) fn print_invisibles(
         }
 
 
-        write!(fmt, "{char}")?;
+        if should_highlight {
+            fmt.write_markup(markup! { <Emphasis><Success>{char}</Success></Emphasis> })?;
+        } else {
+            write!(fmt, "{char}")?;
+        }
     }
 
     Ok(had_non_whitespace)
