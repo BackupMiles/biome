@@ -56,10 +56,9 @@ pub(crate) enum Message {
         skipped_diagnostics: u32,
     },
     SearchDiagnostic {
-        file_name: String,
         content: String,
-        // TODO: use a struct to represent matches maybe
-        matches: Vec<(String, TextRange)>
+        file_name: String,
+        matches: Vec<TextRange>
     },
     Diff {
         file_name: String,
