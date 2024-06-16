@@ -33,8 +33,7 @@ pub(crate) fn search_with_guard<'ctx>(
 
             // FIXME: We need to report some real results here...
             let search_diagnostic = Message::SearchDiagnostic { 
-                // TODO: remove this,
-                content: input.clone(),
+                content: input,
                 file_name: workspace_file.path.display().to_string(),
                 matches: result.matches
              };
