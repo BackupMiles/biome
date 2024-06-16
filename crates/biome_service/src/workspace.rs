@@ -700,7 +700,7 @@ pub struct SearchPatternParams {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct SearchResults {
     pub file: BiomePath,
-    pub matches: Vec<(String, TextRange)>,
+    pub matches: Vec<TextRange>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
