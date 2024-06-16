@@ -111,8 +111,6 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintMatchDiagnostic<'_, D> {
             let current_start = source.line_start(line_index.to_zero_indexed())?;
             let current_end = source.line_start(line_index.to_zero_indexed() + 1)?;
 
-            // TODO: this is not removing <trailing blank lines>
-
             let current_range = TextRange::new(current_start, current_end);
             let current_text = source_code.text[current_range].trim_end_matches(['\r', '\n']);
 
@@ -146,6 +144,10 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintMatchDiagnostic<'_, D> {
                 TextRange::new(TextSize::from(0), current_text.text_len())
             };
 
+            fmt.write_markup(markup! {
+                <Emphasis>{format_args!("{line_index} \u{2502} ")}</Emphasis>
+            })?;
+
             print_invisibles(
                 fmt,
                 current_text,
@@ -166,6 +168,7 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintMatchDiagnostic<'_, D> {
     }
 }
 
+// FIXME: of course this is illegal, remove it
 pub(super) struct PrintInvisiblesOptions {
     /// Do not print tab characters at the start of the string
     pub(super) ignore_leading_tabs: bool,
@@ -180,6 +183,7 @@ pub(super) struct PrintInvisiblesOptions {
     pub(super) at_line_end: bool,
 }
 
+// FIXME: of course this is illegal, figure out what to do with this
 /// Print `input` to `fmt` with invisible characters replaced with an
 /// appropriate visual representation. Return `true` if any non-whitespace
 /// character was printed
@@ -270,7 +274,7 @@ pub(super) fn print_invisibles(
 
 
         if should_highlight {
-            fmt.write_markup(markup! { <Emphasis><Success>{char}</Success></Emphasis> })?;
+            fmt.write_markup(markup! { <Emphasis><Info>{char}</Info></Emphasis> })?;
         } else {
             write!(fmt, "{char}")?;
         }
