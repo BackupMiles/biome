@@ -6,11 +6,10 @@ use crate::execute::diagnostics::{
 };
 use crate::reporter::TraversalSummary;
 use crate::{CliDiagnostic, CliSession};
-use biome_diagnostics::{DiagnosticTags, LineIndexBuf, SourceCode};
+use biome_diagnostics::DiagnosticTags;
 use biome_diagnostics::{category, DiagnosticExt, Error, Resource, Severity};
 use biome_fs::{BiomePath, FileSystem, PathInterner};
 use biome_fs::{TraversalContext, TraversalScope};
-use biome_rowan::TextSize;
 use biome_service::workspace::{DropPatternParams, IsPathIgnoredParams};
 use biome_service::{extension_error, workspace::SupportsFeatureParams, Workspace, WorkspaceError};
 use crossbeam::channel::{unbounded, Receiver, Sender};
@@ -450,17 +449,14 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                         }
                     }
                 }
-                Message::SearchDiagnostic { file_name, content, matches } => {
-                    for mat in matches {
-                        // TODO: should we consider making `mat` a (usize, TextRange)
-                        let (_content, range) = mat;
-                        // TODO: we are getting somewhere, the gist here is that a search result should indicate a line
-                        // and a column.
+                Message::SearchDiagnostic { content, file_name, matches } => {
+                    for range in matches {
                         let diag = MatchDiagnostic {
+                            source_code: content.clone(),
                             file_name: file_name.clone(),
                             span: range
-                        }.with_file_source_code(content.clone());
-                        diagnostics_to_print.push(diag.with_severity(Severity::Information))
+                        };
+                        diagnostics_to_print.push(diag.into())
                     }
                 }
             }
