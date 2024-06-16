@@ -111,6 +111,8 @@ pub(crate) struct MatchDiagnostic {
     pub(crate) file_name: String,
     #[location(span)]
     pub(crate) span: TextRange,
+    #[location(source_code)]
+    pub(crate) source_code: String
 }
 
 /// Extension trait for turning [Display]-able error types into [TraversalError]
