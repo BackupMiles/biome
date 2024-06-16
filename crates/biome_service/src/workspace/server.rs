@@ -788,25 +788,17 @@ impl Workspace for WorkspaceServer {
             pattern: _pattern
          } = params;
 
-         println!(">>> {:?}", &path);
-
         // FIXME: Let's implement some real matching here...
-        // should we consider creating a new ds for search results?
 
-        // TODO: this will read all the file as an &str, a whole line,
-        // which will be subsequently read inside its printer, where much like github printer,
-        // we will try to create a source_file from it, and get the start and end indexes for each match
-
-        // ho do we getw
-        let matches = vec![
-            (String::from("hello world"), TextRange::new(TextSize::from(0), TextSize::from(4)) ),
-            (String::from("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum"), TextRange::new(TextSize::from(8), TextSize::from(10)) ),
+        // TODO: not as random?
+        let match_ranges = vec![
+            TextRange::new(TextSize::from(4), TextSize::from(6)),
+            TextRange::new(TextSize::from(133), TextSize::from(165))
         ];
 
         Ok(SearchResults {
             file: path,
-            // TODO: add matches here
-            matches: matches
+            matches: match_ranges
         })
     }
 
