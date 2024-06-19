@@ -105,14 +105,11 @@ pub(crate) struct UnhandledDiagnostic;
 pub(crate) struct SkippedDiagnostic;
 
 #[derive(Debug, Diagnostic)]
-#[diagnostic(category = "search", message = "Found the following matches")]
+#[diagnostic(category = "search")]
 pub(crate) struct MatchDiagnostic {
-    #[location(resource)]
-    pub(crate) file_name: String,
+    // TODO @BackupMiles remove and use location?
     #[location(span)]
     pub(crate) span: TextRange,
-    #[location(source_code)]
-    pub(crate) source_code: String
 }
 
 /// Extension trait for turning [Display]-able error types into [TraversalError]
