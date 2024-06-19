@@ -3,7 +3,6 @@ use crate::reporter::{DiagnosticsPayload, ReporterVisitor, TraversalSummary};
 use crate::Reporter;
 use biome_console::fmt::Formatter;
 use biome_console::{fmt, markup, Console, ConsoleExt};
-use biome_diagnostics::display_match::PrintMatchDiagnostic;
 use biome_diagnostics::PrintDiagnostic;
 use std::io;
 use std::time::Duration;
@@ -56,6 +55,11 @@ impl<'a> ReporterVisitor for ConsoleReporterVisitor<'a> {
         diagnostics_payload: DiagnosticsPayload,
     ) -> io::Result<()> {
         for diagnostic in &diagnostics_payload.diagnostics {
+            if execution.is_search() {
+                self.0
+                    .log(markup! {{PrintDiagnostic::search(diagnostic)}});
+                continue
+            }
             if diagnostic.severity() >= diagnostics_payload.diagnostic_level {
                 if diagnostic.tags().is_verbose() && diagnostics_payload.verbose {
                     self.0
@@ -64,10 +68,6 @@ impl<'a> ReporterVisitor for ConsoleReporterVisitor<'a> {
                     self.0
                         .error(markup! {{PrintDiagnostic::simple(diagnostic)}});
                 }
-            }
-            if execution.is_search() {
-                self.0
-                    .log(markup! {{PrintMatchDiagnostic(diagnostic)}});
             }
         }
 
@@ -88,18 +88,26 @@ impl fmt::Display for Files {
     }
 }
 
-struct SummaryDetail(usize);
+struct SummaryDetail<'a>(
+    pub(crate) &'a TraversalMode,
+    usize,
+);
 
-impl fmt::Display for SummaryDetail {
+impl<'a> fmt::Display for SummaryDetail<'a> {
     fn fmt(&self, fmt: &mut Formatter) -> io::Result<()> {
-        if self.0 > 0 {
-            fmt.write_markup(markup! {
-                " Fixed "{Files(self.0)}"."
-            })
-        } else {
-            fmt.write_markup(markup! {
-                " No fixes applied."
-            })
+        match self.0 {
+            TraversalMode::Search { .. } => Ok(()),
+            _ => {
+                if self.1 > 0 {
+                    fmt.write_markup(markup! {
+                        " Fixed "{Files(self.1)}"."
+                    })
+                } else {
+                    fmt.write_markup(markup! {
+                        " No fixes applied."
+                    })
+                }
+            }
         }
     }
 }
@@ -152,7 +160,7 @@ pub(crate) struct ConsoleTraversalSummary<'a>(
 impl<'a> fmt::Display for ConsoleTraversalSummary<'a> {
     fn fmt(&self, fmt: &mut Formatter) -> io::Result<()> {
         let summary = SummaryTotal(self.0, self.1.changed + self.1.unchanged, &self.1.duration);
-        let detail = SummaryDetail(self.1.changed);
+        let detail = SummaryDetail(self.0, self.1.changed);
         fmt.write_markup(markup!(<Info>{summary}{detail}</Info>))?;
 
         if self.1.errors > 0 {
