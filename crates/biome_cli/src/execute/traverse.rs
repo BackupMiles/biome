@@ -2,7 +2,7 @@ use super::process_file::{process_file, DiffKind, FileStatus, Message};
 use super::{Execution, TraversalMode};
 use crate::cli_options::CliOptions;
 use crate::execute::diagnostics::{
-    CIFormatDiffDiagnostic, CIOrganizeImportsDiffDiagnostic, ContentDiffAdvice, FormatDiffDiagnostic, MatchDiagnostic, OrganizeImportsDiffDiagnostic, PanicDiagnostic
+    CIFormatDiffDiagnostic, CIOrganizeImportsDiffDiagnostic, ContentDiffAdvice, FormatDiffDiagnostic, OrganizeImportsDiffDiagnostic, PanicDiagnostic
 };
 use crate::reporter::TraversalSummary;
 use crate::{CliDiagnostic, CliSession};
@@ -452,16 +452,6 @@ impl<'ctx> DiagnosticsPrinter<'ctx> {
                                 }
                             };
                         }
-                    }
-                }
-                Message::SearchDiagnostic { content, file_name, matches } => {
-                    for range in matches {
-                        let diag = MatchDiagnostic {
-                            source_code: content.clone(),
-                            file_name: file_name.clone(),
-                            span: range
-                        };
-                        diagnostics_to_print.push(diag.into())
                     }
                 }
             }
