@@ -1,4 +1,4 @@
-use crate::execute::diagnostics::{MatchDiagnostic, ResultExt};
+use crate::execute::diagnostics::{SearchDiagnostic, ResultExt};
 use crate::execute::process_file::workspace_file::WorkspaceFile;
 use crate::execute::process_file::{FileResult, FileStatus, Message, SharedTraversalOptions};
 use biome_diagnostics::{category, DiagnosticExt, Severity};
@@ -39,7 +39,7 @@ pub(crate) fn search_with_guard<'ctx>(
                 diagnostics: result
                     .matches
                     .into_iter()
-                    .map(|mat| MatchDiagnostic { span: mat }.with_severity(Severity::Information).into())
+                    .map(|mat| SearchDiagnostic.with_file_span(mat).with_severity(Severity::Information).into())
                     .collect(),
                 skipped_diagnostics: 0,
             };

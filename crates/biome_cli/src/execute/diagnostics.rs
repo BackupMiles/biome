@@ -2,7 +2,6 @@ use biome_diagnostics::adapters::{IoError, StdError};
 use biome_diagnostics::{
     Advices, Category, Diagnostic, DiagnosticExt, DiagnosticTags, Error, Visit,
 };
-use biome_rowan::TextRange;
 use biome_text_edit::TextEdit;
 use std::io;
 
@@ -106,11 +105,7 @@ pub(crate) struct SkippedDiagnostic;
 
 #[derive(Debug, Diagnostic)]
 #[diagnostic(category = "search")]
-pub(crate) struct MatchDiagnostic {
-    // TODO @BackupMiles remove and use location?
-    #[location(span)]
-    pub(crate) span: TextRange,
-}
+pub(crate) struct SearchDiagnostic;
 
 /// Extension trait for turning [Display]-able error types into [TraversalError]
 pub(crate) trait ResultExt {
