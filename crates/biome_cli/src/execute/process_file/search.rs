@@ -33,7 +33,7 @@ pub(crate) fn search_with_guard<'ctx>(
             let file_name = workspace_file.path.display().to_string();
 
             // FIXME: We need to report some real results here...
-            let search_diagnostic = Message::Diagnostics {
+            let search_results = Message::Diagnostics {
                 name: file_name,
                 content: input,
                 diagnostics: result
@@ -43,7 +43,7 @@ pub(crate) fn search_with_guard<'ctx>(
                     .collect(),
                 skipped_diagnostics: 0,
             };
-            Ok(FileStatus::Message(search_diagnostic))
+            Ok(FileStatus::Message(search_results))
         },
     )
 }
