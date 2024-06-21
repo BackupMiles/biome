@@ -55,11 +55,6 @@ impl<'a> ReporterVisitor for ConsoleReporterVisitor<'a> {
         diagnostics_payload: DiagnosticsPayload,
     ) -> io::Result<()> {
         for diagnostic in &diagnostics_payload.diagnostics {
-            if execution.is_search() {
-                self.0
-                    .log(markup! {{PrintDiagnostic::search(diagnostic)}});
-                continue
-            }
             if diagnostic.severity() >= diagnostics_payload.diagnostic_level {
                 if diagnostic.tags().is_verbose() && diagnostics_payload.verbose {
                     self.0
@@ -68,6 +63,10 @@ impl<'a> ReporterVisitor for ConsoleReporterVisitor<'a> {
                     self.0
                         .error(markup! {{PrintDiagnostic::simple(diagnostic)}});
                 }
+            }
+            if execution.is_search() {
+                self.0
+                    .log(markup! {{PrintDiagnostic::search(diagnostic)}});
             }
         }
 
