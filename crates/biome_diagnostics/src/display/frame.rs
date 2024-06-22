@@ -311,9 +311,9 @@ pub(super) fn print_highlighted_frame(fmt: &mut fmt::Formatter<'_>, location: Lo
             <Emphasis>{format_args!("{line_index} \u{2502} ")}</Emphasis>
         })?;
 
-        let mut iter = current_text.char_indices().peekable();
+        let iter = current_text.char_indices().peekable();
 
-        while let Some((i, char)) = iter.next() {
+        for (i, char) in iter {
             let should_highlight = i >= marker.start().into() && i < marker.end().into();
             if should_highlight {
                 fmt.write_markup(markup! { <Emphasis><Info>{char}</Info></Emphasis> })?;
@@ -323,7 +323,7 @@ pub(super) fn print_highlighted_frame(fmt: &mut fmt::Formatter<'_>, location: Lo
             write!(fmt, "{char}")?;
         }
 
-        write!(fmt, "\n")?;
+        writeln!(fmt)?;
     }
 
     Ok(())

@@ -79,7 +79,7 @@ impl<D: AsDiagnostic + ?Sized> fmt::Display for PrintDiagnostic<'_, D> {
         let mut slot = None;
         let mut fmt = IndentWriter::wrap(fmt, &mut slot, true, "  ");
         
-        if self.search == true {
+        if self.search {
             let mut visitor = PrintSearch(&mut fmt);
             print_advices(&mut visitor, diagnostic, self.verbose)
         } else {

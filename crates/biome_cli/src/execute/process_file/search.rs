@@ -39,7 +39,7 @@ pub(crate) fn search_with_guard<'ctx>(
                 diagnostics: result
                     .matches
                     .into_iter()
-                    .map(|mat| SearchDiagnostic.with_file_span(mat).with_severity(Severity::Hint).into())
+                    .map(|mat| SearchDiagnostic.with_file_span(mat).with_severity(Severity::Hint))
                     .collect(),
                 skipped_diagnostics: 0,
             };
