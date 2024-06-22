@@ -104,7 +104,7 @@ pub(crate) struct UnhandledDiagnostic;
 pub(crate) struct SkippedDiagnostic;
 
 #[derive(Debug, Diagnostic)]
-#[diagnostic(category = "search")]
+#[diagnostic(category = "search", tags(SEARCH))]
 pub(crate) struct SearchDiagnostic;
 
 /// Extension trait for turning [Display]-able error types into [TraversalError]
